@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="CIAResearch.cs" />
     <Compile Include="Helpers\BackgroundCheck.cs" />
+    <Compile Include="Helpers\CIAAccessRequest.cs" />
     <Compile Include="Helpers\Client.cs" />
     <Compile Include="Helpers\DOB.cs" />
     <Compile Include="Helpers\Erelease.cs" />

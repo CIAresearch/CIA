@@ -15,6 +15,7 @@ using Rock.Web.UI.Controls;
 using Rock.Security;
 using Rock.SystemKey;
 using CIAResearch.Helpers;
+using RestSharp;
 
 namespace com_ciaresearch.Blocks.BackgroundCheck
 {
@@ -164,7 +165,7 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
         {
             string providerTypeName = ( typeof( CIAResearch.CIAResearch ) ).FullName;
             string defaultProvider = Rock.Web.SystemSettings.GetValue( SystemSetting.DEFAULT_BACKGROUND_CHECK_PROVIDER ) ?? string.Empty;
-            providerTypeName == defaultProvider;
+            return providerTypeName == defaultProvider;
         }
 
         /// <summary>
@@ -361,6 +362,85 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
                 nbValidate.Text = error;
                 nbValidate.NotificationBoxType = NotificationBoxType.Warning;
             }
+        }
+
+        protected void btnSaveNew_Click( object sender, EventArgs e )
+        {
+            if ( tbNewPassword.Text != tbNewPassword2.Text )
+            {
+                nbValidate.Visible = true;
+                nbValidate.Text = "Passwords did not match.";
+                return;
+            }
+
+            var accessRequest = new CIAAccessRequest
+            {
+                RequestType = ddlNewRequestType.SelectedValue,
+                UserName = tbNewUserName.Text,
+                Password = tbNewPassword.Text,
+                FirstName = tbNewFirstName.Text,
+                MiddleInitial = tbNewMiddleInitial.Text,
+                LastName = tbNewLastName.Text,
+                BranchName = tbNewBranchName.Text,
+                ClientName = tbNewClientName.Text,
+                ClientEmail = tbNewEmail.Text,
+                ClientEmail2 = tbNewEmail2.Text,
+                StreetAddres1 = aNewAddress.Street1,
+                StreetAddres2 = aNewAddress.Street2,
+                City = aNewAddress.City,
+                State = aNewAddress.State,
+                ZipCode = aNewAddress.PostalCode,
+                PhoneNumber = pnNewPhoneNumber.Text
+            };
+
+            var client = new RestClient( "http://www.ciaresearch.com/system/website.nsf/CIASetup?OpenAgent" );
+            var request = new RestRequest( Method.POST );
+            request.XmlSerializer = new RestSharp.Serializers.DotNetXmlSerializer();
+            request.AddXmlBody( accessRequest );
+            request.RequestFormat = RestSharp.DataFormat.Xml;
+            var response = client.Execute<XMLRequest>( request );
+            var data = response.Data;
+
+            if ( data != null && string.IsNullOrWhiteSpace( data.Error ) )
+            {
+                if ( data.Status != "Rejected" )
+                {
+                    pnlEdit.Visible = true;
+                    pnlNew.Visible = false;
+                    btnShowNew.Visible = true;
+                    btnShowEdit.Visible = false;
+                    nbValidate.NotificationBoxType = NotificationBoxType.Info;
+                }
+                else
+                {
+                    nbValidate.NotificationBoxType = NotificationBoxType.Warning;
+                }
+
+                nbValidate.Visible = true;
+                nbValidate.Title = data.Status;
+                nbValidate.Text = data.Message;
+            }
+            else
+            {
+                nbValidate.Visible = true;
+                nbValidate.Text = "There was an issue with your request. Please contact CIA for assistance.";
+            }
+        }
+
+        protected void btnShowNew_Click( object sender, EventArgs e )
+        {
+            pnlEdit.Visible = false;
+            pnlNew.Visible = true;
+            btnShowNew.Visible = false;
+            btnShowEdit.Visible = true;
+        }
+
+        protected void btnShowEdit_Click( object sender, EventArgs e )
+        {
+            pnlEdit.Visible = true;
+            pnlNew.Visible = false;
+            btnShowNew.Visible = true;
+            btnShowEdit.Visible = false;
         }
     }
 }
