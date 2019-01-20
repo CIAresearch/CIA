@@ -31,6 +31,7 @@ namespace CIAResearch.Jobs
             JobDataMap dataMap = context.JobDetail.JobDataMap;
 
             var collected = 0;
+            var errors = 0;
 
             RockContext rockContext = new RockContext();
             BackgroundCheckService backgroundCheckService = new BackgroundCheckService( rockContext );
@@ -73,13 +74,19 @@ namespace CIAResearch.Jobs
                 if ( !string.IsNullOrWhiteSpace( response.ErrorMessage ) )
                 {
                     context.Result = "Error while parsing response: " + response.ErrorMessage;
-                    throw new Exception( "CIA Error: " + response.ErrorMessage );
+                    ExceptionLogService.LogException( new Exception( "CIA Error: " + response.ErrorMessage ) );
+                    errors++;
+                    page++;
+                    continue;
                 }
 
                 if ( !string.IsNullOrWhiteSpace( xmlRequest.Error ) )
                 {
                     context.Result = "CIA Error: " + xmlRequest.Error;
-                    throw new Exception( "CIA Error: " + xmlRequest.Error );
+                    ExceptionLogService.LogException( new Exception( "CIA Error: " + xmlRequest.Error ) );
+                    errors++;
+                    page++;
+                    continue;
                 }
 
                 foreach ( var report in xmlRequest.Reports )
@@ -138,6 +145,10 @@ namespace CIAResearch.Jobs
                 backgroundChecks.Count,
                 backgroundChecks.Count == 1 ? "" : "s",
                 collected );
+            if (errors > 0 )
+            {
+                context.Result += string.Format( " There were {0} errors that occured. Please check your log for information", errors );
+            }
         }
 
     }
