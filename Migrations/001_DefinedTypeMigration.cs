@@ -25,7 +25,7 @@ namespace CIAResearch.Migrations
             RockMigrationHelper.AddDefinedValueAttributeValue( "875AC446-FA69-4AA2-9E40-315E078380B9", "3045594F-7048-428A-A279-9CEF0FEE7040", @"False" );
             RockMigrationHelper.AddDefinedValueAttributeValue( "875AC446-FA69-4AA2-9E40-315E078380B9", "4D8FBA0B-85BB-4177-9D46-C6C4D5E98F4E", @"Social Security Trace" );
             RockMigrationHelper.AddDefinedValueAttributeValue( "DF61D6A0-F236-4959-B611-5439A8A7A172", "3045594F-7048-428A-A279-9CEF0FEE7040", @"True" );
-            RockMigrationHelper.AddDefinedValueAttributeValue( "DF61D6A0-F236-4959-B611-5439A8A7A172", "4D8FBA0B-85BB-4177-9D46-C6C4D5E98F4E", @"TEST123" );
+            RockMigrationHelper.AddDefinedValueAttributeValue( "DF61D6A0-F236-4959-B611-5439A8A7A172", "4D8FBA0B-85BB-4177-9D46-C6C4D5E98F4E", @"" );
 
             Sql( @"UPDATE Attribute SET [IsRequired] = 1 WHERE Guid in ('3045594F-7048-428A-A279-9CEF0FEE7040'  ,'4D8FBA0B-85BB-4177-9D46-C6C4D5E98F4E')" );
         }

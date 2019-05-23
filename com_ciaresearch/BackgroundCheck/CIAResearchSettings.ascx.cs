@@ -137,7 +137,7 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             component.Value.SetAttributeValue( "Active", "True" );
             component.Value.SaveAttributeValue( "Active" );
             // Set as the default provider in the system setting
-            //SystemSettings.SetValue( Rock.SystemKey.SystemSetting.DEFAULT_BACKGROUND_CHECK_PROVIDER, typeName );
+            SystemSettings.SetValue( Rock.SystemKey.SystemSetting.DEFAULT_BACKGROUND_CHECK_PROVIDER, typeName );
 
             ShowDetail();
         }
