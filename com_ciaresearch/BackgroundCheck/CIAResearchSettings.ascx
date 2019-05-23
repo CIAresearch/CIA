@@ -19,7 +19,7 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <Rock:Lava ID="lavaDescription" runat="server">
-                                    <img src="{{ '~/Assets/Images/CIAResearch.png' | ResolveRockUrl }}" style="max-width: 35%;margin:0 auto 16px;display:block;">
+                                    <img src="{{ '~/Plugins/com_ciaresearch/BackgroundCheck/CIAResearch.png' | ResolveRockUrl }}" style="max-width: 35%;margin:0 auto 16px;display:block;">
                                     <p><a href="https://ciaresearch.com" target="_blank">CIA</a> offers customized volunteer and employee background check packages. If you have not already discussed the available options for your organization please contact our sales department at 214-382-2727 ext. 2 or <a href="mailto:Sales@ciaresearch.com">Sales@ciaresearch.com</a>.</p>
                                     </Rock:Lava>
                                     <asp:LinkButton runat="server" ID="btnShowNew" CssClass="btn btn-primary" OnClick="btnShowNew_Click" CausesValidation="false" ValidationGroup="None">Account Request</asp:LinkButton>
