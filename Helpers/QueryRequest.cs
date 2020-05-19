@@ -9,6 +9,7 @@ namespace CIAResearch.Helpers
 {
     public class QueryRequest
     {
+        public string Source { get; set; }
         public Login Login { get; set; }
         public Client Client { get; set; }
 

@@ -14,6 +14,7 @@ using RestSharp;
 using CIAResearch.Utilities;
 using RestSharp.Authenticators;
 using NReco.PdfGenerator;
+using System.Diagnostics.Eventing.Reader;
 
 namespace CIAResearch
 {
@@ -454,6 +455,19 @@ namespace CIAResearch
             }
         }
 
+        internal static void UpdateWorkflowRequestStatus( Rock.Model.BackgroundCheck backgroundCheck, string status )
+        {
+            using ( RockContext rockContext = new RockContext() )
+            {
+                WorkflowService workflowService = new WorkflowService( rockContext );
+                var workflow = workflowService.Get( backgroundCheck.WorkflowId ?? 0 );
+                if ( workflow != null && workflow.IsActive )
+                {
+                    workflow.Status = status;
+                }
+                rockContext.SaveChanges();
+            }
+        }
 
         /// <summary>
         /// Sets the workflow requeststatus attribute.

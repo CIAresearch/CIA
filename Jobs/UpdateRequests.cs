@@ -58,6 +58,7 @@ namespace CIAResearch.Jobs
             {
                 var queryRequest = new QueryRequest
                 {
+                    Source = "ROCKRMS",
                     Client = CIAResearch.GetClient(),
                     Login = CIAResearch.GetLogin(),
                     QueryIDs = backgroundChecks.Skip( page * 20 ).Take( 20 ).Select( b => b.RequestId ).ToList()
@@ -91,11 +92,6 @@ namespace CIAResearch.Jobs
 
                 foreach ( var report in xmlRequest.Reports )
                 {
-                    //Status of 1 means the report is done
-                    if ( report.ReportStatus != "1" )
-                    {
-                        continue;
-                    }
                     // get the related database entry
                     var backgroundCheck = backgroundChecks.FirstOrDefault( b => b.RequestId == report.TrackingNumber );
 
@@ -105,6 +101,13 @@ namespace CIAResearch.Jobs
                         continue;
                     }
 
+                    //Status of 1 means the report is done
+                    if ( report.ReportStatus != "1" )
+                    {
+                        //Update the status of the workflow to the status of the status text
+                        CIAResearch.UpdateWorkflowRequestStatus( backgroundCheck, report.ReportStatusText );
+                        continue;
+                    }
 
                     BinaryFile reportFile = new BinaryFile();
                     try
@@ -116,7 +119,8 @@ namespace CIAResearch.Jobs
                             Content = pdf,
                         };
 
-                        reportFile.FileName = "Background Check: " + backgroundCheck.PersonAlias.Person.FullName + ".pdf";
+                        var person = backgroundCheck.PersonAlias.Person;
+                        reportFile.FileName =string.Format($"BackgroundCheck_{person.FirstName}_{person.LastName}.pdf") ;
                         reportFile.IsTemporary = false;
                         reportFile.DatabaseData = reportData;
                         reportFile.MimeType = "application/pdf";
