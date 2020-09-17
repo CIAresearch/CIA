@@ -161,6 +161,13 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             }
         }
 
+        private bool IsActive()
+        {
+            string typeName = ( typeof( CIAResearch.CIAResearch ).FullName );
+            var component = BackgroundCheckContainer.Instance.Components.Values.FirstOrDefault( c => c.Value.TypeName == typeName );
+            return component.Value.GetAttributeValue( "Active" ).AsBoolean();
+        }
+
         private bool IsDefaultProvider()
         {
             string providerTypeName = ( typeof( CIAResearch.CIAResearch ) ).FullName;
@@ -173,13 +180,13 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
         /// </summary>
         private void ShowDetail()
         {
-            if ( IsDefaultProvider() )
+            if ( !IsDefaultProvider() || !IsActive() )
             {
-                btnDefault.Visible = false;
+                btnDefault.Visible = true;
             }
             else
             {
-                btnDefault.Visible = true;
+                btnDefault.Visible = false;
             }
 
             nbValidate.Visible = false;
@@ -213,14 +220,12 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             }
             else
             {
-                if ( IsDefaultProvider() )
+                if ( IsActive() )
                 {
-                    btnDefault.Visible = false;
                     pnlPackages.Enabled = true;
                 }
                 else
                 {
-                    btnDefault.Visible = true;
                     pnlPackages.Enabled = false;
                 }
 

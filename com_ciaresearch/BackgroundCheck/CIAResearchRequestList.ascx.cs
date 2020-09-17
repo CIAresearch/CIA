@@ -276,7 +276,9 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
                 {
                     Name = b.PersonAlias.Person.LastName + ", " + b.PersonAlias.Person.NickName,
                     Id = b.Id,
+                    BackgroundCheck = b,
                     PersonId = b.PersonAlias.PersonId,
+                    Person = b.PersonAlias.Person,
                     HasWorkflow = b.WorkflowId.HasValue,
                     RequestDate = b.RequestDate.ToString( "MM/dd/yyyy" ),
                     ResponseDate = b.ResponseDate.HasValue ? b.ResponseDate.Value.ToString( "MM/dd/yyyy" ) : "",
@@ -296,11 +298,13 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             pnlContent.Visible = visible;
         }
 
-        private class BackgroundCheckItem
+        private class BackgroundCheckItem : Rock.Utility.RockDynamic
         {
             public string Name { get; set; }
             public int Id { get; set; }
+            public Rock.Model.BackgroundCheck BackgroundCheck { get; set; }
             public int PersonId { get; set; }
+            public Person Person { get; set; }
             public bool HasWorkflow { get; set; }
             public string RequestDate { get; set; }
             public string ResponseDate { get; set; }
