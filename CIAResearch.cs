@@ -1,20 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Composition;
 using System.Linq;
+using CIAResearch.Helpers;
+using CIAResearch.Utilities;
+using NReco.PdfGenerator;
+using RestSharp;
+using RestSharp.Authenticators;
+using Rock;
 using Rock.Attribute;
-using Rock.Web.Cache;
 using Rock.Data;
 using Rock.Model;
 using Rock.Security;
-using System.ComponentModel.Composition;
-using Rock;
-using CIAResearch.Helpers;
-using RestSharp;
-using CIAResearch.Utilities;
-using RestSharp.Authenticators;
-using NReco.PdfGenerator;
-using System.Diagnostics.Eventing.Reader;
+using Rock.Web.Cache;
 
 namespace CIAResearch
 {
@@ -30,6 +29,7 @@ namespace CIAResearch
     [TextField( "Client Contact", "Point of contact for your organization", order: 5 )]
     [TextField( "Client Contact Email", "Email for the point of contact for your organization", order: 6 )]
 
+    [IntegerField( "Expiration Days", "The number of days to keep a background check open until expiring it.", defaultValue: 30, order: 7 )]
     public class CIAResearch : BackgroundCheckComponent
     {
         #region BackgroundCheckComponent Implementation
@@ -331,6 +331,19 @@ namespace CIAResearch
                 return false;
             }
             return true;
+        }
+
+        internal static int GetExpirationDays()
+        {
+            var attributes = AttributeUtilities.GetSettings( new RockContext() );
+
+            var expiration = AttributeUtilities.GetSettingValue( attributes, "ExpirationDays" ).AsInteger();
+            if ( expiration < 1 )
+            {
+                expiration = 30;
+            }
+
+            return expiration;
         }
 
         internal static Client GetClient( string clientId = null )

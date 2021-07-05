@@ -1,18 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Web;
 using CIAResearch.Helpers;
 using Quartz;
 using RestSharp;
 using Rock;
-using Rock.Attribute;
 using Rock.Data;
 using Rock.Model;
 using Rock.Web.Cache;
-using Rock.Web.UI;
-using Rock.Web.UI.Controls;
 
 namespace CIAResearch.Jobs
 {
@@ -32,6 +26,7 @@ namespace CIAResearch.Jobs
 
             var collected = 0;
             var errors = 0;
+            var expirationDays = CIAResearch.GetExpirationDays();
 
             RockContext rockContext = new RockContext();
             BackgroundCheckService backgroundCheckService = new BackgroundCheckService( rockContext );
@@ -64,7 +59,7 @@ namespace CIAResearch.Jobs
                     QueryIDs = backgroundChecks.Skip( page * 20 ).Take( 20 ).Select( b => b.RequestId ).ToList()
                 };
 
-                var client = new RestClient( "https://www.ciaresearch.com/system/center.nsf/(QueryXMLResults)?OpenAgent" );
+                var client = new RestClient( "https://www.ciaresearch.com/system/xml.nsf/QueryResults?OpenAgent" );
                 var request = new RestRequest( Method.POST );
                 request.XmlSerializer = new RestSharp.Serializers.DotNetXmlSerializer();
                 request.AddXmlBody( queryRequest );
@@ -101,11 +96,34 @@ namespace CIAResearch.Jobs
                         continue;
                     }
 
-                    //Status of 1 means the report is done
+                    //If the status does not equal 1 it's not done yet
                     if ( report.ReportStatus != "1" )
                     {
-                        //Update the status of the workflow to the status of the status text
-                        CIAResearch.UpdateWorkflowRequestStatus( backgroundCheck, report.ReportStatusText );
+                        //Check to see if the background check is older than allowed
+                        if ( backgroundCheck.CreatedDateTime == null
+                            || ( RockDateTime.Now - backgroundCheck.CreatedDateTime.Value ).Days > expirationDays )
+                        {
+                            try
+                            {
+                                //Close out old background check
+                                backgroundCheck.ResponseDate = RockDateTime.Today;
+                                backgroundCheck.Status = "Expired";
+                                if ( backgroundCheck.Workflow != null )
+                                {
+                                    backgroundCheck.Workflow.MarkComplete( "Expired" );
+                                }
+                                rockContext.SaveChanges();
+                            }
+                            catch (Exception ex)
+                            {
+                                ExceptionLogService.LogException( new Exception( "Could not expire background check.", ex ) );
+                            }
+                        }
+                        else
+                        {
+                            //Update the status of the workflow to the status of the status text
+                            CIAResearch.UpdateWorkflowRequestStatus( backgroundCheck, report.ReportStatusText );
+                        }
                         continue;
                     }
 
@@ -120,7 +138,7 @@ namespace CIAResearch.Jobs
                         };
 
                         var person = backgroundCheck.PersonAlias.Person;
-                        reportFile.FileName =string.Format($"BackgroundCheck_{person.FirstName}_{person.LastName}.pdf") ;
+                        reportFile.FileName = string.Format( $"BackgroundCheck_{person.FirstName}_{person.LastName}.pdf" );
                         reportFile.IsTemporary = false;
                         reportFile.DatabaseData = reportData;
                         reportFile.MimeType = "application/pdf";
@@ -149,7 +167,7 @@ namespace CIAResearch.Jobs
                 backgroundChecks.Count,
                 backgroundChecks.Count == 1 ? "" : "s",
                 collected );
-            if (errors > 0 )
+            if ( errors > 0 )
             {
                 context.Result += string.Format( " There were {0} errors that occured. Please check your log for information", errors );
             }
