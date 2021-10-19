@@ -105,14 +105,7 @@ namespace CIAResearch.Jobs
                         {
                             try
                             {
-                                //Close out old background check
-                                backgroundCheck.ResponseDate = RockDateTime.Today;
-                                backgroundCheck.Status = "Expired";
-                                if ( backgroundCheck.Workflow != null )
-                                {
-                                    backgroundCheck.Workflow.MarkComplete( "Expired" );
-                                }
-                                rockContext.SaveChanges();
+                                CIAResearch.CancelBackgroundCheck( backgroundCheck.Id, "Expired" );
                             }
                             catch (Exception ex)
                             {

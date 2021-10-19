@@ -1,8 +1,8 @@
 ﻿<%@ Control Language="C#" AutoEventWireup="true" CodeFile="CIAResearchRequestList.ascx.cs" Inherits="com_ciaresearch.Blocks.BackgroundCheck.CIAResearchRequestList" %>
 
 <style>
-    .clearinside a{
-        visibility:hidden
+    .clearinside a {
+        visibility: hidden
     }
 </style>
 
@@ -32,6 +32,7 @@
                                 <Rock:LinkButtonField HeaderText="Report" Text="<i class='fa fa-file-pdf-o fa-lg'></i>" OnClick="gRequest_Data" />
                                 <Rock:LinkButtonField HeaderText="Link" Text="<i class='fa fa-file-alt fa-lg'></i>" OnClick="gRequest_Link" />
                                 <Rock:LinkButtonField HeaderText="Clear" Text="<i class='fa fa-redo-alt fa-lg'></i>" OnClick="gRequest_Rerequest" />
+                                <Rock:DeleteField HeaderText="Cancel" OnClick="btnCancel_Click" />
                             </Columns>
                         </Rock:Grid>
                     </div>

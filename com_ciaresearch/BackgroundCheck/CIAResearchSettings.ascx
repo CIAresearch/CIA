@@ -59,6 +59,7 @@
                                         <Rock:RockTextBox ID="tbBranchName" runat="server" Label="Default Branch Name" Required="true" />
                                         <Rock:RockTextBox ID="tbClientContact" runat="server" Label="Default Client Contact" Required="true" />
                                         <Rock:RockTextBox ID="tbClientContactEmail" runat="server" Label="Default Client Contact Email" Required="true" />
+                                        <Rock:RockTextBox ID="tbCancelAfter" runat="server" Label="Expiration Days" Help="The number of days to keep a background check open until expiring it." />
                                         <div class="actions">
                                             <asp:LinkButton ID="btnSave" runat="server" CssClass="btn btn-primary" OnClick="btnSave_Click">Save</asp:LinkButton>
                                             <asp:LinkButton ID="btnValidate" runat="server" CssClass="btn btn-default" OnClick="btnValidate_Click">Validate</asp:LinkButton>

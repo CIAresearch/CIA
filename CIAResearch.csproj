@@ -79,6 +79,7 @@
     <Compile Include="Helpers\XMLRequest.cs" />
     <Compile Include="Jobs\UpdateRequests.cs" />
     <Compile Include="Migrations\001_DefinedTypeMigration.cs" />
+    <Compile Include="Migrations\008_EmailBody.cs" />
     <Compile Include="Migrations\007_RemovePMMRef.cs" />
     <Compile Include="Migrations\006_BypassReview.cs" />
     <Compile Include="Migrations\005_SsnNotRequred.cs" />

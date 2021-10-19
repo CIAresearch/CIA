@@ -8,6 +8,7 @@ namespace CIAResearch.Helpers
 {
     public class ERelease
     {
+        public string EmailBody { get; set; }
         public string TrackingNumber { get; set; }
         public string RefNumber { get; set; }
         public string OrderedBy { get; set; }

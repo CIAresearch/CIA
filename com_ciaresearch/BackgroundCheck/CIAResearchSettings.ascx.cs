@@ -74,6 +74,14 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
                 SetSettingValue( rockContext, settings, "ClientContact", tbClientContact.Text );
                 SetSettingValue( rockContext, settings, "ClientContactEmail", tbClientContactEmail.Text );
 
+                var cancelAfter = tbCancelAfter.Text;
+                if (cancelAfter.AsInteger() < 1 )
+                {
+                    cancelAfter = "30";
+                }
+
+                SetSettingValue( rockContext, settings, "ExpirationDays", cancelAfter );
+
 
                 rockContext.SaveChanges();
 
@@ -197,6 +205,7 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             string branchName = null;
             string clientContact = null;
             string clientContactEmail = null;
+            string cancelAfter = null;
             using ( RockContext rockContext = new RockContext() )
             {
                 var settings = GetSettings( rockContext );
@@ -208,7 +217,13 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
                     branchName = GetSettingValue( settings, "BranchName" );
                     clientContact = GetSettingValue( settings, "ClientContact" );
                     clientContactEmail = GetSettingValue( settings, "ClientContactEmail" );
+                    cancelAfter = GetSettingValue( settings, "ExpirationDays" );
                 }
+            }
+
+            if ( cancelAfter.AsInteger() < 1 )
+            {
+                cancelAfter = "30";
             }
 
             if ( password.IsNullOrWhiteSpace() )
@@ -235,6 +250,7 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
                 tbBranchName.Text = branchName;
                 tbClientContact.Text = clientContact;
                 tbClientContactEmail.Text = clientContactEmail;
+                tbCancelAfter.Text = cancelAfter;
 
                 lViewColumnLeft.Text = new DescriptionList()
                     .Add( "UserName", userName )
@@ -243,6 +259,7 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
                     .Add( "Branch Name", branchName )
                     .Add( "Client Contact", clientContact )
                     .Add( "Client Contact Email", clientContactEmail )
+                    .Add( "Expiration Days", cancelAfter )
                     .Html;
                 DisplayPackages();
             }

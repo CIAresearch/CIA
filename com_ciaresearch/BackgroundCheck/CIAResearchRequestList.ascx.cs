@@ -38,7 +38,6 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
 
             gRequest.DataKeyNames = new string[] { "Id" };
             gRequest.Actions.ShowAdd = false;
-            gRequest.IsDeleteEnabled = false;
             gRequest.RowDataBound += gRequest_RowDataBound;
             gRequest.GridRebind += gRequest_GridRebind;
             gRequest.RowSelected += gRequest_RowSelected;
@@ -50,6 +49,17 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             if ( item != null )
             {
                 if ( string.IsNullOrWhiteSpace( item.ResponseDate ) )
+                {
+                    e.Row.Cells[4].CssClass = "clearinside";
+                    e.Row.Cells[5].CssClass = "clearinside";
+                    e.Row.Cells[6].CssClass = "clearinside";
+                }
+                else
+                {
+                    e.Row.Cells[7].CssClass = "clearinside";
+                }
+
+                if ( item.BackgroundCheck.Status == "Expired" || item.BackgroundCheck.Status == "Canceled" )
                 {
                     e.Row.Cells[4].CssClass = "clearinside";
                     e.Row.Cells[5].CssClass = "clearinside";
@@ -193,6 +203,12 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             }
         }
 
+        protected void btnCancel_Click( object sender, RowEventArgs e )
+        {
+            CIAResearch.CIAResearch.CancelBackgroundCheck( e.RowKeyId, "Canceled" );
+            BindGrid();
+        }
+
         #endregion
         #region Internal Methods
 
@@ -311,5 +327,7 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             public string TrackingNumber { get; set; }
         }
         #endregion
+
+
     }
 }

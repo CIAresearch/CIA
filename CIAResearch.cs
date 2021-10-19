@@ -87,15 +87,30 @@ namespace CIAResearch
                     }
                 }
 
+                var emailBody = workflow.GetAttributeValue( "EmailBody" );
+                if ( emailBody.IsNullOrWhiteSpace() )
+                {
+                    emailBody = "";
+                }
+
                 string trackingNumber;
                 var isEConsent = package.GetAttributeValue( "IsEConsent" ).AsBoolean();
                 var packageName = package.GetAttributeValue( "PackageName" );
                 var orderedBy = workflow.InitiatorPersonAlias.Person;
 
+                var requestOptions = new RequestOptions
+                {
+                    PackageName = packageName,
+                    CampusName = campusName,
+                    SSN = ssn,
+                    OrderedBy = orderedBy,
+                    Person = person,
+                    EmailBody = emailBody
+                };
 
                 if ( isEConsent )
                 {
-                    if ( !CreateNewEConsent( person, ssn, campusName, packageName, orderedBy, out trackingNumber, errorMessages ) )
+                    if ( !CreateNewEConsent( requestOptions, out trackingNumber, errorMessages ) )
                     {
                         errorMessages.Add( "Was not able to create background check." );
                         UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
@@ -104,7 +119,8 @@ namespace CIAResearch
                 }
                 else
                 {
-                    if ( !CreateNewRequest( person, ssn, campusName, packageName, orderedBy, out trackingNumber, errorMessages ) )
+
+                    if ( !CreateNewRequest( requestOptions, out trackingNumber, errorMessages ) )
                     {
                         errorMessages.Add( "Was not able to create background check." );
                         UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
@@ -152,20 +168,21 @@ namespace CIAResearch
             }
         }
 
-        private bool CreateNewEConsent( Person person, string ssn, string campusName, string packageName, Person orderedBy, out string trackingNumber, List<string> errorMessages )
+        private bool CreateNewEConsent( RequestOptions requestOptions, out string trackingNumber, List<string> errorMessages )
         {
             trackingNumber = "";
 
             var eRelease = new NewErelease
             {
                 Login = GetLogin(),
-                Client = GetClient( packageName ),
+                Client = GetClient( requestOptions.PackageName ),
                 ERelease = new ERelease
                 {
-                    RefNumber = campusName,
-                    OrderedBy = orderedBy.FullName,
-                    OrderedByEmail = orderedBy.Email,
-                    Subject = GetSubject( person, ssn )
+                    RefNumber = requestOptions.CampusName,
+                    OrderedBy = requestOptions.OrderedBy?.FullName ?? "Unknown",
+                    OrderedByEmail = requestOptions.Person?.Email ?? "noreply@anonymous.com",
+                    Subject = GetSubject( requestOptions ),
+                    EmailBody = requestOptions.EmailBody
                 }
             };
 
@@ -199,7 +216,7 @@ namespace CIAResearch
             return true;
         }
 
-        private bool CreateNewRequest( Person person, string ssn, string campusName, string packageName, Person orderedBy, out string trackingNumber, List<string> errorMessages )
+        private bool CreateNewRequest( RequestOptions requestOptions, out string trackingNumber, List<string> errorMessages )
         {
             trackingNumber = "";
 
@@ -209,14 +226,14 @@ namespace CIAResearch
                 Client = GetClient(),
                 BackgroundCheck = new Helpers.BackgroundCheck
                 {
-                    Subject = GetSubject( person, ssn ),
+                    Subject = GetSubject( requestOptions ),
                     Search = new Search
                     {
                         OrderMore = "Yes",
-                        Type = packageName,
-                        RefNumber = campusName,
-                        OrderedBy = orderedBy.FullName,
-                        OrderedByEmail = orderedBy.Email
+                        Type = requestOptions.PackageName,
+                        RefNumber = requestOptions.CampusName,
+                        OrderedBy = requestOptions.Person?.FullName ?? "Unknown",
+                        OrderedByEmail = requestOptions.Person?.Email ?? "noreply@anonymous.com"
                     }
                 }
             };
@@ -252,31 +269,31 @@ namespace CIAResearch
         }
 
 
-        Subject GetSubject( Person person, string ssn )
+        Subject GetSubject( RequestOptions requestOptions )
         {
             var subject = new Subject
             {
-                LastName = person.LastName,
-                FirstName = person.FirstName,
-                ContactEmail = person.Email,
+                LastName = requestOptions.Person.LastName,
+                FirstName = requestOptions.Person.FirstName,
+                ContactEmail = requestOptions.Person.Email,
             };
 
-            if ( !string.IsNullOrWhiteSpace( person.MiddleName ) )
+            if ( requestOptions.Person.MiddleName.IsNotNullOrWhiteSpace() )
             {
-                subject.MiddleInitial = person.MiddleName[0].ToString();
+                subject.MiddleInitial = requestOptions.Person.MiddleName[0].ToString();
             }
 
-            var phone = person.GetPhoneNumber( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid() );
+            var phone = requestOptions.Person.GetPhoneNumber( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_MOBILE.AsGuid() );
             if ( phone == null )
             {
-                phone = person.GetPhoneNumber( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_HOME.AsGuid() );
+                phone = requestOptions.Person.GetPhoneNumber( Rock.SystemGuid.DefinedValue.PERSON_PHONE_TYPE_HOME.AsGuid() );
             }
             if ( phone != null )
             {
                 subject.Phone = phone.Number;
             }
 
-            var address = person.GetHomeLocation();
+            var address = requestOptions.Person.GetHomeLocation();
 
             if ( address != null )
             {
@@ -286,23 +303,23 @@ namespace CIAResearch
                 subject.ZipCode = address.PostalCode;
             }
 
-            if ( person.BirthDate != null )
+            if ( requestOptions.Person.BirthDate != null )
             {
                 subject.DOB = new DOB
                 {
-                    DOBYEAR = person.BirthDate.Value.ToString( "yyyy" ),
-                    DOBMONTH = person.BirthDate.Value.ToString( "MM" ),
-                    DOBDAY = person.BirthDate.Value.ToString( "dd" )
+                    DOBYEAR = requestOptions.Person.BirthDate.Value.ToString( "yyyy" ),
+                    DOBMONTH = requestOptions.Person.BirthDate.Value.ToString( "MM" ),
+                    DOBDAY = requestOptions.Person.BirthDate.Value.ToString( "dd" )
                 };
             }
 
-            if ( !string.IsNullOrWhiteSpace( ssn ) )
+            if ( requestOptions.SSN.IsNotNullOrWhiteSpace() )
             {
                 subject.SSN = new SSN
                 {
-                    SSN1 = ssn.Substring( 0, 3 ),
-                    SSN2 = ssn.Substring( 4, 2 ),
-                    SSN3 = ssn.Substring( 7, 4 )
+                    SSN1 = requestOptions.SSN.Substring( 0, 3 ),
+                    SSN2 = requestOptions.SSN.Substring( 4, 2 ),
+                    SSN3 = requestOptions.SSN.Substring( 7, 4 )
                 };
             }
             return subject;
@@ -379,19 +396,6 @@ namespace CIAResearch
 
         #region Internal Methods
 
-
-        /// <summary>
-        /// Gets the person that is currently logged in.
-        /// </summary>
-        /// <returns></returns>
-        private Person GetCurrentPerson()
-        {
-            using ( var rockContext = new RockContext() )
-            {
-                var currentUser = new UserLoginService( rockContext ).GetByUserName( UserLogin.GetCurrentUserName() );
-                return currentUser != null ? currentUser.Person : null;
-            }
-        }
 
         /// <summary>
         /// Updates the workflow.
@@ -651,6 +655,34 @@ namespace CIAResearch
         {
             return GetReportUrl( reportKey );
         }
+
+        public static void CancelBackgroundCheck( int backgroundCheckId, string status )
+        {
+            using ( RockContext rockContext = new RockContext() )
+            {
+                BackgroundCheckService backgroundCheckService = new BackgroundCheckService( rockContext );
+                var backgroundCheck = backgroundCheckService.Get( backgroundCheckId );
+
+                backgroundCheck.ResponseDate = RockDateTime.Today;
+                backgroundCheck.Status = status;
+                if ( backgroundCheck.Workflow != null )
+                {
+                    backgroundCheck.Workflow.MarkComplete( status );
+                }
+                rockContext.SaveChanges();
+            }
+        }
+
         #endregion
+    }
+
+    class RequestOptions
+    {
+        public Person Person { get; set; }
+        public string SSN { get; set; }
+        public string CampusName { get; set; }
+        public string PackageName { get; set; }
+        public Person OrderedBy { get; set; }
+        public string EmailBody { get; set; }
     }
 }
