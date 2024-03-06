@@ -82,6 +82,10 @@
                                 </div>
                                 <div class="col-md-6">
                                     <Rock:RockLiteral ID="lPackages" runat="server" Label="Enabled Background Check Types" />
+                                    <asp:LinkButton runat="server" ID="lbRefresh" OnClick="lbRefresh_Click"
+                                        CssClass="btn btn-xs btn-primary" CausesValidation="false">
+                                        <i class="fa fa-sync-alt"></i> Refresh List
+                                    </asp:LinkButton>
                                 </div>
                             </div>
                         </div>

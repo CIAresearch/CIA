@@ -16,6 +16,7 @@ using Rock.Security;
 using Rock.SystemKey;
 using CIAResearch.Helpers;
 using RestSharp;
+using CIAResearch;
 
 namespace com_ciaresearch.Blocks.BackgroundCheck
 {
@@ -75,7 +76,7 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
                 SetSettingValue( rockContext, settings, "ClientContactEmail", tbClientContactEmail.Text );
 
                 var cancelAfter = tbCancelAfter.Text;
-                if (cancelAfter.AsInteger() < 1 )
+                if ( cancelAfter.AsInteger() < 1 )
                 {
                     cancelAfter = "30";
                 }
@@ -91,6 +92,7 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             pnlToken.Visible = false;
             pnlPackages.Visible = true;
             HideSecondaryBlocks( false );
+            RefreshPackages();
             ShowDetail();
         }
 
@@ -146,8 +148,23 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             component.Value.SaveAttributeValue( "Active" );
             // Set as the default provider in the system setting
             SystemSettings.SetValue( Rock.SystemKey.SystemSetting.DEFAULT_BACKGROUND_CHECK_PROVIDER, typeName );
-
+            RefreshPackages();
             ShowDetail();
+        }
+
+        private void RefreshPackages()
+        {
+            try
+            {
+                var component = ( CIAResearch.CIAResearch ) BackgroundCheckContainer.GetComponent( typeof( CIAResearch.CIAResearch ).FullName );
+                component.RefreshPackages();
+            }
+            catch ( Exception ex )
+            {
+                LogException( ex );
+                nbNotification.Visible = true;
+                nbNotification.Text = "There was an error refreshing packages: " + ex.Message;
+            }
         }
         #endregion
 
@@ -464,5 +481,13 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             btnShowNew.Visible = true;
             btnShowEdit.Visible = false;
         }
+
+        protected void lbRefresh_Click( object sender, EventArgs e )
+        {
+            RefreshPackages();
+            ShowDetail();
+        }
+
+
     }
 }

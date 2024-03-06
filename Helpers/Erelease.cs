@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CIAResearch.Helpers
+﻿namespace CIAResearch.Helpers
 {
     public class ERelease
     {
@@ -14,5 +8,8 @@ namespace CIAResearch.Helpers
         public string OrderedBy { get; set; }
         public string OrderedByEmail { get; set; }
         public Subject Subject { get; set; }
+        public string PackageChoice { get; set; }
+        public string afterRelease { get; set; } = "QU";
+        public string releasetype { get; set; } = "Volunteer";
     }
 }

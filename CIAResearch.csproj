@@ -52,6 +52,8 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -70,6 +72,7 @@
     <Compile Include="Helpers\Login.cs" />
     <Compile Include="Helpers\NewErelease.cs" />
     <Compile Include="Helpers\NewRequest.cs" />
+    <Compile Include="Helpers\ServiceListResponse.cs" />
     <Compile Include="Helpers\QueryRequest.cs" />
     <Compile Include="Helpers\Report.cs" />
     <Compile Include="Helpers\Search.cs" />
@@ -77,8 +80,11 @@
     <Compile Include="Helpers\Subject.cs" />
     <Compile Include="Helpers\ValidationRequest.cs" />
     <Compile Include="Helpers\XMLRequest.cs" />
+    <Compile Include="Jobs\AutoRenewBackgroundChecks.cs" />
     <Compile Include="Jobs\UpdateRequests.cs" />
     <Compile Include="Migrations\001_DefinedTypeMigration.cs" />
+    <Compile Include="Migrations\010_RenewAttribute.cs" />
+    <Compile Include="Migrations\009_AutoRenewalWorkflow.cs" />
     <Compile Include="Migrations\008_EmailBody.cs" />
     <Compile Include="Migrations\007_RemovePMMRef.cs" />
     <Compile Include="Migrations\006_BypassReview.cs" />
@@ -111,6 +117,9 @@
       <Project>{8820CD93-70EE-496D-B17B-0C4C68DD4957}</Project>
       <Name>Rock.Lava.Shared</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

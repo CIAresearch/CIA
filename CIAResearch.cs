@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using CIAResearch.Helpers;
 using CIAResearch.Utilities;
 using NReco.PdfGenerator;
@@ -175,14 +179,15 @@ namespace CIAResearch
             var eRelease = new NewErelease
             {
                 Login = GetLogin(),
-                Client = GetClient( requestOptions.PackageName ),
+                Client = GetClient( "(***USE_PACKAGE_ID***)" ),
                 ERelease = new ERelease
                 {
                     RefNumber = requestOptions.CampusName,
                     OrderedBy = requestOptions.OrderedBy?.FullName ?? "Unknown",
                     OrderedByEmail = requestOptions.Person?.Email ?? "noreply@anonymous.com",
                     Subject = GetSubject( requestOptions ),
-                    EmailBody = requestOptions.EmailBody
+                    EmailBody = requestOptions.EmailBody,
+                    PackageChoice = requestOptions.PackageName
                 }
             };
 
@@ -672,6 +677,109 @@ namespace CIAResearch
                 rockContext.SaveChanges();
             }
         }
+
+        public void RefreshPackages()
+        {
+            var attributes = AttributeUtilities.GetSettings( new RockContext() );
+
+
+            var clientName = AttributeUtilities.GetSettingValue( attributes, "ClientName" );
+            var branchName = AttributeUtilities.GetSettingValue( attributes, "BranchName" );
+
+            var xmlSOAP = $@"<soapenv:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:urn=""urn:DefaultNamespace"">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <urn:GETSERVICESLISTDATA soapenv:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
+         <CLIENTID xsi:type=""xsd:string"">{clientName}_{branchName}</CLIENTID>
+      </urn:GETSERVICESLISTDATA>
+   </soapenv:Body>
+</soapenv:Envelope>";
+
+
+            var task = Task.Run( async () =>
+            {
+                var url = "https://www.ciaresearch.com:443/system/center.nsf/RetrievePackagesWS?OpenWebService";
+                return await PostSOAPRequestAsync( url, xmlSOAP );
+            } );
+            var result = task.Result;
+
+            //I really tried to do this the right way, but it fought me the entire time.
+            //Instead of parsing the xml I'm just going right for what I actually need.
+            int pFrom = result.IndexOf( "<GETSERVICESLISTDATAReturn xsi:type=\"xsd:string\">" ) + "<GETSERVICESLISTDATAReturn xsi:type=\"xsd:string\">".Length;
+            int pTo = result.LastIndexOf( "</GETSERVICESLISTDATAReturn>" );
+
+            var xresult = result.Substring( pFrom, pTo - pFrom );
+
+            var contentXML = System.Net.WebUtility.HtmlDecode( xresult );
+            var services = FromXML<ServicesList>( contentXML );
+
+            UpdateDefinedValues( services );
+        }
+
+        private void UpdateDefinedValues( ServicesList services )
+        {
+            RockContext rockContext = new RockContext();
+            DefinedValueService definedValueService = new DefinedValueService( rockContext );
+            var definedTypeGuid = new Guid( Constants.DEFINED_TYPE );
+            var definedValues = definedValueService.Queryable().Where( dv => dv.DefinedType.Guid == definedTypeGuid ).ToList();
+
+            var toRemove = definedValues.Where( dv => !services.Service.Select( s => s.Name ).Contains( dv.Value ) ).ToList();
+            foreach ( var item in toRemove )
+            {
+                definedValueService.Delete( item );
+                rockContext.SaveChanges();
+            }
+
+            foreach ( var service in services.Service )
+            {
+                if ( definedValues.Select( dv => dv.Value ).Contains( service.Name ) )
+                {
+                    continue;
+                }
+
+                var definedValue = new DefinedValue
+                {
+                    DefinedTypeId = DefinedTypeCache.Get( definedTypeGuid ).Id,
+                    Value = service.Name,
+                    IsActive = true
+                };
+                definedValueService.Add( definedValue );
+
+                rockContext.SaveChanges();
+
+                definedValue.LoadAttributes();
+                definedValue.SetAttributeValue( "IsEConsent", "True" );
+                definedValue.SetAttributeValue( "PackageName", service.PackageInfo.PackageID );
+                definedValue.SaveAttributeValues();
+            }
+
+
+        }
+
+        private static async Task<string> PostSOAPRequestAsync( string url, string text )
+        {
+            var httpClient = new HttpClient();
+            using ( HttpContent content = new StringContent( text, Encoding.UTF8, "text/xml" ) )
+            using ( HttpRequestMessage request = new HttpRequestMessage( HttpMethod.Post, url ) )
+            {
+                request.Headers.Add( "SOAPAction", "GETSERVICESLISTDATA" );
+                request.Content = content;
+                using ( HttpResponseMessage response = await httpClient.SendAsync( request, HttpCompletionOption.ResponseHeadersRead ) )
+                {
+                    return await response.Content.ReadAsStringAsync();
+                }
+            }
+        }
+
+        private T FromXML<T>( string xml )
+        {
+            var serializer = new System.Xml.Serialization.XmlSerializer( typeof( T ) );
+            using ( StringReader reader = new StringReader( xml ) )
+            {
+                return ( T ) serializer.Deserialize( reader );
+            }
+        }
+
 
         #endregion
     }
