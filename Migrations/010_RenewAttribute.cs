@@ -16,7 +16,6 @@ namespace CIAResearch.Migrations
 
         public override void Down()
         {
-            //Nope nope nope.
         }
     }
 }
