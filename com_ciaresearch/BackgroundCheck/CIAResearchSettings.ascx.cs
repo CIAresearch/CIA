@@ -103,43 +103,55 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         protected void btnDefault_Click( object sender, EventArgs e )
         {
-            var bioBlock = BlockCache.Get( Rock.SystemGuid.Block.BIO.AsGuid() );
-            // Record an exception if the stock Bio block has been deleted but continue processing
-            // the remaining settings.
-            if ( bioBlock == null )
+            RockContext rockContext = new RockContext();
+            BlockService blockService = new BlockService( rockContext );
+
+            var bioBlockGuids = new List<Guid>()
             {
-                var errorMessage = string.Format( "Stock Bio block ({0}) is missing.", Rock.SystemGuid.Block.BIO );
-                ExceptionLogService.LogException( new Exception( errorMessage ) );
-            }
-            else
+                Rock.SystemGuid.Block.BIO.AsGuid(), // <=v13
+                new Guid("1e6af671-9c1a-4c6c-8156-36b6d7589f34") // >=v14
+            };
+
+            foreach ( var blockGuid in bioBlockGuids )
             {
-                List<Guid> workflowActionGuidList = bioBlock.GetAttributeValues( "WorkflowActions" ).AsGuidList();
-                if ( workflowActionGuidList == null || workflowActionGuidList.Count == 0 )
+
+                var bioBlock = blockService.Get( blockGuid );
+                if ( bioBlock == null )
                 {
-                    // Add CIA Research to Bio Workflow Actions
-                    bioBlock.SetAttributeValue( "WorkflowActions", CIAResearch.Utilities.Constants.WORKFLOW_TYPE );
+                    var errorMessage = string.Format( "Stock Bio block ({0}) is missing.", Rock.SystemGuid.Block.BIO );
+                    ExceptionLogService.LogException( new Exception( errorMessage ) );
                 }
                 else
                 {
-                    Guid guid = CIAResearch.Utilities.Constants.WORKFLOW_TYPE.AsGuid();
-                    if ( !workflowActionGuidList.Any( w => w == guid ) )
+                    bioBlock.LoadAttributes();
+                    List<Guid> workflowActionGuidList = bioBlock.GetAttributeValues( "WorkflowActions" ).AsGuidList();
+                    if ( workflowActionGuidList == null || workflowActionGuidList.Count == 0 )
                     {
                         // Add CIA Research to Bio Workflow Actions
-                        workflowActionGuidList.Add( guid );
+                        bioBlock.SetAttributeValue( "WorkflowActions", CIAResearch.Utilities.Constants.WORKFLOW_TYPE );
+                    }
+                    else
+                    {
+                        Guid guid = CIAResearch.Utilities.Constants.WORKFLOW_TYPE.AsGuid();
+                        if ( !workflowActionGuidList.Any( w => w == guid ) )
+                        {
+                            // Add CIA Research to Bio Workflow Actions
+                            workflowActionGuidList.Add( guid );
+                        }
+
+                        // Remove PMM from Bio Workflow Actions
+                        guid = Rock.SystemGuid.WorkflowType.PROTECTMYMINISTRY.AsGuid();
+                        workflowActionGuidList.RemoveAll( w => w == guid );
+                        bioBlock.SetAttributeValue( "WorkflowActions", workflowActionGuidList.AsDelimited( "," ) );
+
+                        // Remove Checkr from Bio Workflow Actions
+                        guid = CheckrSystemGuid.CHECKR_WORKFLOW_TYPE.AsGuid();
+                        workflowActionGuidList.RemoveAll( w => w == guid );
+                        bioBlock.SetAttributeValue( "WorkflowActions", workflowActionGuidList.AsDelimited( "," ) );
                     }
 
-                    // Remove PMM from Bio Workflow Actions
-                    guid = Rock.SystemGuid.WorkflowType.PROTECTMYMINISTRY.AsGuid();
-                    workflowActionGuidList.RemoveAll( w => w == guid );
-                    bioBlock.SetAttributeValue( "WorkflowActions", workflowActionGuidList.AsDelimited( "," ) );
-
-                    // Remove Checkr from Bio Workflow Actions
-                    guid = CheckrSystemGuid.CHECKR_WORKFLOW_TYPE.AsGuid();
-                    workflowActionGuidList.RemoveAll( w => w == guid );
-                    bioBlock.SetAttributeValue( "WorkflowActions", workflowActionGuidList.AsDelimited( "," ) );
+                    bioBlock.SaveAttributeValue( "WorkflowActions" );
                 }
-
-                bioBlock.SaveAttributeValue( "WorkflowActions" );
             }
 
             string typeName = ( typeof( CIAResearch.CIAResearch ).FullName );
@@ -157,7 +169,10 @@ namespace com_ciaresearch.Blocks.BackgroundCheck
             try
             {
                 var component = ( CIAResearch.CIAResearch ) BackgroundCheckContainer.GetComponent( typeof( CIAResearch.CIAResearch ).FullName );
-                component.RefreshPackages();
+                if ( component != null )
+                {
+                    component.RefreshPackages();
+                }
             }
             catch ( Exception ex )
             {
