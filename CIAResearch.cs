@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CIAResearch.Helpers;
 using CIAResearch.Utilities;
@@ -68,9 +69,15 @@ namespace CIAResearch
                     return true;
                 }
 
+                var package = GetPackageName( rockContext, workflow, requestTypeAttribute, errorMessages );
+                string previousTrackingNumber = string.Empty;
+                //Only pull old tracking number for refresh if package is not specified
+                if ( package == null )
+                {
+                    previousTrackingNumber = GetLastTrackingNumber( person );
+                }
 
-                DefinedValueCache package;
-                if ( !GetPackageName( rockContext, workflow, requestTypeAttribute, out package, errorMessages ) )
+                if ( package == null && previousTrackingNumber.IsNullOrWhiteSpace() )
                 {
                     errorMessages.Add( "Unable to find background check package." );
                     UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
@@ -98,7 +105,7 @@ namespace CIAResearch
                 }
 
                 string trackingNumber;
-                var isEConsent = package.GetAttributeValue( "IsEConsent" ).AsBoolean();
+                var haveConsent = workflow.GetAttributeValue( "HaveConsent" ).AsBoolean();
                 var packageName = package.GetAttributeValue( "PackageName" );
                 var orderedBy = workflow.InitiatorPersonAlias.Person;
 
@@ -109,10 +116,20 @@ namespace CIAResearch
                     SSN = ssn,
                     OrderedBy = orderedBy,
                     Person = person,
-                    EmailBody = emailBody
+                    EmailBody = emailBody,
+                    PreviousTrackingNumber = previousTrackingNumber
                 };
 
-                if ( isEConsent )
+                if ( previousTrackingNumber.IsNotNullOrWhiteSpace() )
+                {
+                    if ( !CreateNewRequest( requestOptions, out trackingNumber, errorMessages ) )
+                    {
+                        errorMessages.Add( "Was not able to create background check." );
+                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                        return true;
+                    }
+                }
+                else if ( !haveConsent )
                 {
                     if ( !CreateNewEConsent( requestOptions, out trackingNumber, errorMessages ) )
                     {
@@ -123,6 +140,12 @@ namespace CIAResearch
                 }
                 else
                 {
+                    if ( package.GetAttributeValue( "IsSsnRequired" ).AsBoolean() && !SsnValid( ssn ) )
+                    {
+                        errorMessages.Add( "Package requires a valid SSN." );
+                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                        return true;
+                    }
 
                     if ( !CreateNewRequest( requestOptions, out trackingNumber, errorMessages ) )
                     {
@@ -172,6 +195,8 @@ namespace CIAResearch
             }
         }
 
+
+
         private bool CreateNewEConsent( RequestOptions requestOptions, out string trackingNumber, List<string> errorMessages )
         {
             trackingNumber = "";
@@ -184,7 +209,7 @@ namespace CIAResearch
                 {
                     RefNumber = requestOptions.CampusName,
                     OrderedBy = requestOptions.OrderedBy?.FullName ?? "Unknown",
-                    OrderedByEmail = requestOptions.Person?.Email ?? "noreply@anonymous.com",
+                    OrderedByEmail = requestOptions.Person?.Email ?? GlobalAttributesCache.Value( "OrganizationEmail" ),
                     Subject = GetSubject( requestOptions ),
                     EmailBody = requestOptions.EmailBody,
                     PackageChoice = requestOptions.PackageName
@@ -235,13 +260,22 @@ namespace CIAResearch
                     Search = new Search
                     {
                         OrderMore = "Yes",
-                        Type = requestOptions.PackageName,
+
                         RefNumber = requestOptions.CampusName,
                         OrderedBy = requestOptions.Person?.FullName ?? "Unknown",
-                        OrderedByEmail = requestOptions.Person?.Email ?? "noreply@anonymous.com"
+                        OrderedByEmail = requestOptions.Person?.Email ?? GlobalAttributesCache.Value( "OrganizationEmail" )
                     }
                 }
             };
+
+            if ( requestOptions.PreviousTrackingNumber.IsNotNullOrWhiteSpace() )
+            {
+                bgcRequest.BackgroundCheck.Search.TrackingNumberPrevious = requestOptions.PreviousTrackingNumber;
+            }
+            else
+            {
+                bgcRequest.BackgroundCheck.Search.Type = requestOptions.PackageName;
+            }
 
             var client = new RestClient( "https://www.ciaresearch.com/system/center.nsf/(RequestBackgroundCheck)?OpenAgent" );
             var request = new RestRequest( Method.POST );
@@ -524,29 +558,14 @@ namespace CIAResearch
         /// <param name="packageName"></param>
         /// <param name="errorMessages">The error messages.</param>
         /// <returns>True/False value of whether the request was successfully sent or not.</returns>
-        private bool GetPackageName( RockContext rockContext, Workflow workflow, AttributeCache requestTypeAttribute, out DefinedValueCache package, List<string> errorMessages )
+        private DefinedValueCache GetPackageName( RockContext rockContext, Workflow workflow, AttributeCache requestTypeAttribute, List<string> errorMessages )
         {
-            package = null;
             if ( requestTypeAttribute == null )
             {
-                errorMessages.Add( "This background check provider requires a background check type." );
-                return false;
+                return null;
             }
 
-            DefinedValueCache pkgTypeDefinedValue = DefinedValueCache.Get( workflow.GetAttributeValue( requestTypeAttribute.Key ).AsGuid() );
-            if ( pkgTypeDefinedValue == null )
-            {
-                errorMessages.Add( "This background check provider couldn't load background check type." );
-                return false;
-            }
-
-            if ( pkgTypeDefinedValue.Attributes == null )
-            {
-                return false;
-            }
-
-            package = pkgTypeDefinedValue;
-            return true;
+            return DefinedValueCache.Get( workflow.GetAttributeValue( requestTypeAttribute.Key ).AsGuid() );
         }
 
         private bool GetPerson( RockContext rockContext, Workflow workflow, AttributeCache personAttribute, out Person person, out int? personAliasId, List<string> errorMessages )
@@ -678,6 +697,25 @@ namespace CIAResearch
             }
         }
 
+        private string GetLastTrackingNumber( Person person )
+        {
+            RockContext rockContext = new RockContext();
+            var backgroundCheckService = new BackgroundCheckService( rockContext );
+
+            var bgCheck = backgroundCheckService.Queryable()
+                .Where( b => b.PersonAlias.PersonId == person.Id )
+                .OrderByDescending( b => b.ResponseDate )
+                .FirstOrDefault();
+
+            if ( bgCheck == null )
+            {
+                return null;
+            }
+
+            return bgCheck.RequestId;
+        }
+
+
         public void RefreshPackages()
         {
             var attributes = AttributeUtilities.GetSettings( new RockContext() );
@@ -732,28 +770,35 @@ namespace CIAResearch
 
             foreach ( var service in services.Service )
             {
-                if ( definedValues.Select( dv => dv.Value ).Contains( service.Name ) )
+                var definedValue = definedValues.FirstOrDefault( dv => dv.Value == service.Name );
+
+                if ( definedValue == null )
                 {
-                    continue;
+                    definedValue = new DefinedValue
+                    {
+                        DefinedTypeId = DefinedTypeCache.Get( definedTypeGuid ).Id,
+                        Value = service.Name,
+                        IsActive = true
+                    };
+                    definedValueService.Add( definedValue );
+
+                    rockContext.SaveChanges();
                 }
 
-                var definedValue = new DefinedValue
-                {
-                    DefinedTypeId = DefinedTypeCache.Get( definedTypeGuid ).Id,
-                    Value = service.Name,
-                    IsActive = true
-                };
-                definedValueService.Add( definedValue );
-
-                rockContext.SaveChanges();
+                var ssnRequired = service.FieldRequirements.Subject.FieldRequirement
+                    .Any( r => r.Property == "SSN1" && r.Required == 1 );
 
                 definedValue.LoadAttributes();
                 definedValue.SetAttributeValue( "IsEConsent", "True" );
+                definedValue.SetAttributeValue( "IsSsnRequired", ssnRequired ? "True" : "False" );
                 definedValue.SetAttributeValue( "PackageName", service.PackageInfo.PackageID );
                 definedValue.SaveAttributeValues();
             }
+        }
 
-
+        private bool SsnValid( string ssn )
+        {
+            return ssn.IsNotNullOrWhiteSpace() && Regex.IsMatch( ssn, "^\\d{3}-\\d{2}-\\d{4}$" );
         }
 
         private static async Task<string> PostSOAPRequestAsync( string url, string text )
@@ -792,5 +837,6 @@ namespace CIAResearch
         public string PackageName { get; set; }
         public Person OrderedBy { get; set; }
         public string EmailBody { get; set; }
+        public string PreviousTrackingNumber { get; set; }
     }
 }

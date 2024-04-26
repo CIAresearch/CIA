@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CIAResearch.Helpers
+﻿namespace CIAResearch.Helpers
 {
     public class Search
     {
@@ -13,5 +7,6 @@ namespace CIAResearch.Helpers
         public string RefNumber { get; set; }
         public string OrderedBy { get; set; }
         public string OrderedByEmail { get; set; }
+        public string TrackingNumberPrevious { get; set; }
     }
 }
