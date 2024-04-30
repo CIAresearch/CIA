@@ -4,7 +4,7 @@ using Rock.Web.Cache;
 
 namespace CIAResearch.Migrations
 {
-    [MigrationNumber( 14, "1.14.0" )]
+    [MigrationNumber( 13, "1.14.0" )]
     public partial class AddReportPage
         : Migration
     {

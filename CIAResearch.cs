@@ -64,8 +64,7 @@ namespace CIAResearch
                 int? personAliasId;
                 if ( !GetPerson( rockContext, workflow, personAttribute, out person, out personAliasId, errorMessages ) )
                 {
-                    errorMessages.Add( "Unable to get Person." );
-                    UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                    UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", "Unable to get Person." );
                     return true;
                 }
 
@@ -79,8 +78,7 @@ namespace CIAResearch
 
                 if ( package == null && previousTrackingNumber.IsNullOrWhiteSpace() )
                 {
-                    errorMessages.Add( "Unable to find background check package." );
-                    UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                    UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", "Unable to find background check package." );
                     return true;
                 }
 
@@ -106,8 +104,8 @@ namespace CIAResearch
 
                 string trackingNumber;
                 var haveConsent = workflow.GetAttributeValue( "HaveConsent" ).AsBoolean();
-                var packageName = package.GetAttributeValue( "PackageName" );
-                var orderedBy = workflow.InitiatorPersonAlias.Person;
+                var packageName = package?.GetAttributeValue( "PackageName" );
+                var orderedBy = workflow.InitiatorPersonAlias?.Person;
 
                 var requestOptions = new RequestOptions
                 {
@@ -124,17 +122,15 @@ namespace CIAResearch
                 {
                     if ( !CreateNewRequest( requestOptions, out trackingNumber, errorMessages ) )
                     {
-                        errorMessages.Add( "Was not able to create background check." );
-                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", "Was not able to create background check." );
                         return true;
                     }
                 }
-                else if ( !haveConsent )
+                else if ( !haveConsent && package!=null)
                 {
                     if ( !CreateNewEConsent( requestOptions, out trackingNumber, errorMessages ) )
                     {
-                        errorMessages.Add( "Was not able to create background check." );
-                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", "Was not able to create background check." );
                         return true;
                     }
                 }
@@ -142,15 +138,13 @@ namespace CIAResearch
                 {
                     if ( package.GetAttributeValue( "IsSsnRequired" ).AsBoolean() && !SsnValid( ssn ) )
                     {
-                        errorMessages.Add( "Package requires a valid SSN." );
-                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", "Package requires a valid SSN." );
                         return true;
                     }
 
                     if ( !CreateNewRequest( requestOptions, out trackingNumber, errorMessages ) )
                     {
-                        errorMessages.Add( "Was not able to create background check." );
-                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", "Was not able to create background check." );
                         return true;
                     }
                 }
@@ -182,7 +176,7 @@ namespace CIAResearch
                     backgroundCheck.RequestId = trackingNumber;
                     newRockContext.SaveChanges();
 
-                    UpdateWorkflowRequestStatus( workflow, newRockContext, "SUCCESS" );
+                    UpdateWorkflowRequestStatus( workflow, newRockContext, "SUCCESS", backgroundCheck.RequestId );
                     return true;
                 }
             }
@@ -190,7 +184,7 @@ namespace CIAResearch
             {
                 ExceptionLogService.LogException( ex, null );
                 errorMessages.Add( ex.Message );
-                UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL" );
+                UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", ex.Message );
                 return true;
             }
         }
@@ -531,10 +525,16 @@ namespace CIAResearch
         /// <param name="workflow">The workflow.</param>
         /// <param name="rockContext">The rock context.</param>
         /// <param name="requestStatus">The request status.</param>
-        private void UpdateWorkflowRequestStatus( Workflow workflow, RockContext rockContext, string requestStatus )
+        private void UpdateWorkflowRequestStatus( Workflow workflow, RockContext rockContext, string requestStatus, string requestMessage )
         {
             if ( SaveAttributeValue( workflow, "RequestStatus", requestStatus,
                 FieldTypeCache.Get( Rock.SystemGuid.FieldType.TEXT.AsGuid() ), rockContext, null ) )
+            {
+                rockContext.SaveChanges();
+            }
+
+            if ( SaveAttributeValue( workflow, "RequestMessage", requestMessage,
+               FieldTypeCache.Get( Rock.SystemGuid.FieldType.TEXT.AsGuid() ), rockContext, null ) )
             {
                 rockContext.SaveChanges();
             }
