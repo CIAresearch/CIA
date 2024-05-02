@@ -122,15 +122,15 @@ namespace CIAResearch
                 {
                     if ( !CreateNewRequest( requestOptions, out trackingNumber, errorMessages ) )
                     {
-                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", "Was not able to create background check." );
+                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", $"Was not able to create background check. {string.Join( " ", errorMessages )}" );
                         return true;
                     }
                 }
-                else if ( !haveConsent && package!=null)
+                else if ( !haveConsent && package != null )
                 {
                     if ( !CreateNewEConsent( requestOptions, out trackingNumber, errorMessages ) )
                     {
-                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", "Was not able to create background check." );
+                        UpdateWorkflowRequestStatus( workflow, rockContext, "FAIL", $"Was not able to create background check. {string.Join( " ", errorMessages )}" );
                         return true;
                     }
                 }
