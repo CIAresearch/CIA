@@ -268,7 +268,8 @@ namespace CIAResearch
             }
             else
             {
-                bgcRequest.BackgroundCheck.Search.Type = requestOptions.PackageName;
+                bgcRequest.BackgroundCheck.Search.Type = "Package";
+                bgcRequest.BackgroundCheck.Search.PackageChoice = requestOptions.PackageName;
             }
 
             var client = new RestClient( "https://www.ciaresearch.com/system/center.nsf/(RequestBackgroundCheck)?OpenAgent" );
