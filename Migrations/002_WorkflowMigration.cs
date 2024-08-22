@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CIAResearch.Utilities;
+using Rock;
 using Rock.Plugin;
+using Rock.Web.Cache;
 
 namespace CIAResearch.Migrations
 {
@@ -13,9 +16,10 @@ namespace CIAResearch.Migrations
         public override void Up()
         {
             RockMigrationHelper.UpdateEntityType( "CIAResearch.CIAResearch", "CIA Research", "CIAResearch.CIAResearch, CIAResearch, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", false, true, "7F674FD9-8CB0-4078-AB6B-03B6D47978A1" );
+            var packageDefinedTypeId = DefinedTypeCache.Get( "855D493C-5C22-4FCA-AADF-3C742FA8389B".AsGuid() ).Id;
+
 
             #region EntityTypes
-
             RockMigrationHelper.UpdateEntityType( "Rock.Model.Workflow", "3540E9A7-FE30-43A9-8B0A-A372B63DFC93", true, true );
             RockMigrationHelper.UpdateEntityType( "Rock.Model.WorkflowActivity", "2CB52ED0-CB06-4D62-9E2C-73B60AFA4C9F", true, true );
             RockMigrationHelper.UpdateEntityType( "Rock.Model.WorkflowActionType", "23E3273A-B137-48A3-9AFF-C8DC832DDCA6", true, true );
@@ -147,7 +151,7 @@ namespace CIAResearch.Migrations
             RockMigrationHelper.AddAttributeQualifier( "95A58DB2-0952-4919-9332-1170A1531234", "falsetext", @"No", "3FFCE738-930F-40F7-B3BA-761947306AB7" ); // Background Check (CIA):Warn Of Recent:falsetext
             RockMigrationHelper.AddAttributeQualifier( "95A58DB2-0952-4919-9332-1170A1531234", "truetext", @"Yes", "71523477-DC09-4069-8312-21BB7D0375D1" ); // Background Check (CIA):Warn Of Recent:truetext
             RockMigrationHelper.AddAttributeQualifier( "324AA7AF-8B8F-4F3F-A484-F6A4FF4218B4", "allowmultiple", @"False", "30BF01FC-FE06-4F94-886E-AC5DCC044044" ); // Background Check (CIA):Type:allowmultiple
-            RockMigrationHelper.AddAttributeQualifier( "324AA7AF-8B8F-4F3F-A484-F6A4FF4218B4", "definedtypeguid", @"855D493C-5C22-4FCA-AADF-3C742FA8389B", "5D98C7FC-5F35-4355-847C-C905B8BA9259" ); // Background Check (CIA):Type:definedtype
+            RockMigrationHelper.AddAttributeQualifier( "324AA7AF-8B8F-4F3F-A484-F6A4FF4218B4", "definedtype", packageDefinedTypeId.ToString(), "5D98C7FC-5F35-4355-847C-C905B8BA9259" ); // Background Check (CIA):Type:definedtype
             RockMigrationHelper.AddAttributeQualifier( "324AA7AF-8B8F-4F3F-A484-F6A4FF4218B4", "displaydescription", @"False", "3091AA16-A1CC-4712-AEFD-D1D78E7C2189" ); // Background Check (CIA):Type:displaydescription
             RockMigrationHelper.AddAttributeQualifier( "324AA7AF-8B8F-4F3F-A484-F6A4FF4218B4", "enhancedselection", @"False", "7E667BD1-BC97-43F0-A7E9-C61938110FBE" ); // Background Check (CIA):Type:enhancedselection
             RockMigrationHelper.AddAttributeQualifier( "324AA7AF-8B8F-4F3F-A484-F6A4FF4218B4", "includeInactive", @"False", "8DEAD4F9-C83C-4F62-BD18-A107B26C9B16" ); // Background Check (CIA):Type:includeInactive
@@ -156,7 +160,7 @@ namespace CIAResearch.Migrations
             RockMigrationHelper.AddAttributeQualifier( "D07ECD05-A82C-4284-ACD2-3A63916ECE82", "values", @"Pass,Fail,Review", "9CAECCB9-48E7-42E4-80C8-1F76342A4372" ); // Background Check (CIA):Report Status:values
             RockMigrationHelper.AddAttributeQualifier( "F23BD8AC-9AD3-456E-A059-AA25FEECB3C0", "binaryFileType", @"5C701472-8A6B-4BBE-AEC6-EC833C859F2D", "740AAE21-095F-44C1-AD2C-C15F17972524" ); // Background Check (CIA):Report:binaryFileType
             RockMigrationHelper.AddAttributeQualifier( "331F72EA-31C7-49CF-A0E0-5AA94818FA20", "allowmultiple", @"False", "01ED4B1E-5124-4558-913F-15645214B763" ); // Background Check (CIA):EConsent:allowmultiple
-            RockMigrationHelper.AddAttributeQualifier( "331F72EA-31C7-49CF-A0E0-5AA94818FA20", "definedtypeguid", @"855D493C-5C22-4FCA-AADF-3C742FA8389B", "094CBDAE-DBD7-4698-BDBA-80A61194365E" ); // Background Check (CIA):EConsent:definedtype
+            RockMigrationHelper.AddAttributeQualifier( "331F72EA-31C7-49CF-A0E0-5AA94818FA20", "definedtype", packageDefinedTypeId.ToString(), "094CBDAE-DBD7-4698-BDBA-80A61194365E" ); // Background Check (CIA):EConsent:definedtype
             RockMigrationHelper.AddAttributeQualifier( "331F72EA-31C7-49CF-A0E0-5AA94818FA20", "displaydescription", @"False", "EA57F174-5DB2-4FBB-9F16-EF3A054CC8F1" ); // Background Check (CIA):EConsent:displaydescription
             RockMigrationHelper.AddAttributeQualifier( "331F72EA-31C7-49CF-A0E0-5AA94818FA20", "enhancedselection", @"False", "FA6E783D-1405-4A33-8445-87DDF42AB573" ); // Background Check (CIA):EConsent:enhancedselection
             RockMigrationHelper.AddAttributeQualifier( "331F72EA-31C7-49CF-A0E0-5AA94818FA20", "includeInactive", @"False", "A16D4A8E-D093-4007-A179-AC4F6175F8A5" ); // Background Check (CIA):EConsent:includeInactive
@@ -452,12 +456,6 @@ namespace CIAResearch.Migrations
             RockMigrationHelper.AddActionTypeAttributeValue( "D25F9014-00BF-46FE-B1AC-902432156F06", "07CB7DBC-236D-4D38-92A4-47EE448BA89A", @"Completed" ); // Background Check (CIA):Complete Request:Complete Workflow:Status|Status Attribute
             RockMigrationHelper.AddActionTypeAttributeValue( "189E0A71-0DD7-4925-B202-F16FBFC6F1C6", "361A1EC8-FFD0-4880-AF68-91DC0E0D7CDC", @"False" ); // Background Check (CIA):Cancel Request:Delete Workflow:Active
             RockMigrationHelper.AddActionTypeAttributeValue( "189E0A71-0DD7-4925-B202-F16FBFC6F1C6", "79D23F8B-0DC8-4B48-8A86-AEA48B396C82", @"" ); // Background Check (CIA):Cancel Request:Delete Workflow:Order
-
-            #endregion
-
-            #region DefinedValue AttributeType qualifier helper
-
-            Sql( @"     UPDATE [aq] SET [key] = 'definedtype', [Value] = CAST( [dt].[Id] as varchar(5) )     FROM [AttributeQualifier] [aq]     INNER JOIN [Attribute] [a] ON [a].[Id] = [aq].[AttributeId]     INNER JOIN [FieldType] [ft] ON [ft].[Id] = [a].[FieldTypeId]     INNER JOIN [DefinedType] [dt] ON CAST([dt].[guid] AS varchar(50) ) = [aq].[value]     WHERE [ft].[class] = 'Rock.Field.Types.DefinedValueFieldType'     AND [aq].[key] = 'definedtypeguid'    " );
 
             #endregion
         }

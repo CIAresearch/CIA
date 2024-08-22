@@ -83,6 +83,7 @@
     <Compile Include="Jobs\AutoRenewBackgroundChecks.cs" />
     <Compile Include="Jobs\UpdateRequests.cs" />
     <Compile Include="Migrations\001_DefinedTypeMigration.cs" />
+    <Compile Include="Migrations\015_RenewalNotification.cs" />
     <Compile Include="Migrations\014_UpdateWorkflow.cs" />
     <Compile Include="Migrations\012_AddSsnOptionalAttribute.cs" />
     <Compile Include="Migrations\013_AddReportPage.cs" />
